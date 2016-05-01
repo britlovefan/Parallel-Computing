@@ -193,28 +193,43 @@ int main(int argc, char **argv) {
 /* Provided global variables are MAXN, N, procs, A[][], B[], and X[],
  * defined in the beginning of this code.  X[] is initialized to zeros.
  */
+/*==========================Algorithm Description(explicit)===========================
+In the original gauss function, after the initialization perform gauss_compute which 
+is the parallel part 
+Each single task is responsible for one zero element in the lower diaganal of A
+Implement the mutex in the second loop of Gaussian elimination
+For dynamic schedule: use the row and global_row
+Also, a barrier is added to make sure that each row has finished computation
+before moving to the next one
+==============================================================================*/
+#include <pthread.h>
+pthread_mutex_t global_lock;
+pthread_barrier_t barrier;
+// initialize the parallel part 
+void *compute_gauss(*void);
+long global_row
+
 void gauss() {
-  int norm, row, col;  /* Normalization row, and zeroing
+  int row, col;  /* Normalization row, and zeroing
 			* element row and col */
-  float multiplier;
+  /* Initialization: argument i, threads,lock,barrier */
+  int i = 0
+  pthread_t threads[procs];
+  pthread_mutex_init(&global_lock,NULL);
+  pthread_barrier_init(&barrier, NULL, procs);
 
-  printf("Computing Serially.\n");
-
-  /* Gaussian elimination */
-  for (norm = 0; norm < N - 1; norm++) {
-    for (row = norm + 1; row < N; row++) {
-      multiplier = A[row][norm] / A[norm][norm];
-      for (col = norm; col < N; col++) {
-	A[row][col] -= A[norm][col] * multiplier;
-      }
-      B[row] -= B[norm] * multiplier;
-    }
+  printf("Parallel Program.\n");
+  //m_set_procs( procs )
+  for (i = 0; i < procs; i++)
+  {
+     pthread_create(&threads[i],NULL,&compute_gauss,(void*)i);
   }
-  /* (Diagonal elements are not normalized to 1.  This is treated in back
-   * substitution.)
-   */
-
-
+  //m_fork
+  for(i = 0; i < procs; i++)
+  {
+     pthread_join(threads[i], NULL); 
+  } 
+  /* no need to parallelize back substitution */
   /* Back substitution */
   for (row = N - 1; row >= 0; row--) {
     X[row] = B[row];
@@ -222,5 +237,42 @@ void gauss() {
       X[row] -= A[row][col] * X[col];
     }
     X[row] /= A[row][row];
+  }
+
+  // testcase,print result
+  for (row = 0; row < N; row++) {
+    fprintf(stderr, "%d ", X[row] );
+  }
+
+  pthread_mutex_destroy(&global_lock);
+  pthread_barrier_destroy(&barrier);
+
+}
+//parallel part 
+void compute_gauss(void *threadid){
+  int norm, row, col; 
+  long tid;
+  tid = (long)threadid;
+  float multiplier;
+
+ /* Gaussian elimination */
+  for (norm = 0; norm < N - 1; norm++) {
+    global_row = norm + 1;
+    while(global_row < N){
+      pthread_mutex_lock(global_lock);
+      //m_lock();
+      row = global_row;
+      global_row++;
+      pthread_mutex_unlock(global_lock);
+      //m_unlock();
+    /* for (row = norm + 1; row < N; row++) { parallize this part */
+      multiplier = A[row][norm] / A[norm][norm];
+      for (col = norm; col < N; col++) {
+        A[row][col] -= A[norm][col] * multiplier;
+      }
+      B[row] -= B[norm] * multiplier;
+    }
+    // wait until all are finished
+    pthread_barrier_wait(&barrier);
   }
 }
