@@ -202,19 +202,22 @@ void gauss() {
 
   /* Gaussian elimination */
   for (norm = 0; norm < N - 1; norm++) {
-    for (row = norm + 1; row < N; row++) {
-      multiplier = A[row][norm] / A[norm][norm];
-      for (col = norm; col < N; col++) {
-	A[row][col] -= A[norm][col] * multiplier;
+    #pragma omp parallel private(row, multiplier, col) num_threads(procs)
+    {
+      #pragma omp for schedule(dynamic)
+       for (row = norm + 1; row < N; row++) {
+        multiplier = A[row][norm] / A[norm][norm];
+       for (col = norm; col < N; col++) {
+	      A[row][col] -= A[norm][col] * multiplier;
       }
       B[row] -= B[norm] * multiplier;
     }
   }
+}
   /* (Diagonal elements are not normalized to 1.  This is treated in back
    * substitution.)
    */
-
-
+   
   /* Back substitution */
   for (row = N - 1; row >= 0; row--) {
     X[row] = B[row];
