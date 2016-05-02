@@ -205,15 +205,15 @@ before moving to the next one
 #include <pthread.h>
 pthread_mutex_t global_lock;
 pthread_barrier_t barrier;
+long global_row;
 // initialize the parallel part 
-void *compute_gauss(*void);
-long global_row
+void *compute_gauss(void*);
 
 void gauss() {
   int row, col;  /* Normalization row, and zeroing
 			* element row and col */
   /* Initialization: argument i, threads,lock,barrier */
-  int i = 0
+  int i = 0;
   pthread_t threads[procs];
   pthread_mutex_init(&global_lock,NULL);
   pthread_barrier_init(&barrier, NULL, procs);
@@ -249,7 +249,7 @@ void gauss() {
 
 }
 //parallel part 
-void compute_gauss(void *threadid){
+void *compute_gauss(void *threadid){
   int norm, row, col; 
   long tid;
   tid = (long)threadid;
@@ -259,11 +259,11 @@ void compute_gauss(void *threadid){
   for (norm = 0; norm < N - 1; norm++) {
     global_row = norm + 1;
     while(global_row < N){
-      pthread_mutex_lock(global_lock);
+      pthread_mutex_lock(&global_lock);
       //m_lock();
       row = global_row;
       global_row++;
-      pthread_mutex_unlock(global_lock);
+      pthread_mutex_unlock(&global_lock);
       //m_unlock();
     /* for (row = norm + 1; row < N; row++) { parallize this part */
       multiplier = A[row][norm] / A[norm][norm];
