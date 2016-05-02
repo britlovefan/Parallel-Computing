@@ -21,7 +21,7 @@
 char *ID;
 
 /* Program Parameters */
-#define MAXN 2000  /* Max value of N */
+#define MAXN 10000  /* Max value of N */
 int N;  /* Matrix size */
 int procs;  /* Number of processors to use */
 
