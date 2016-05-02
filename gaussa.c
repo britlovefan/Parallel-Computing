@@ -21,7 +21,7 @@
 char *ID;
 
 /* Program Parameters */
-#define MAXN 2000  /* Max value of N */
+#define MAXN 10000  /* Max value of N */
 int N;  /* Matrix size */
 int procs;  /* Number of processors to use */
 
@@ -220,7 +220,7 @@ void gauss() {
 
   printf("Parallel Program.\n");
   //m_set_procs( procs )
-  for (i = 0; i < procs; i++)
+  for(i = 0; i < procs; i++)
   {
      pthread_create(&threads[i],NULL,&compute_gauss,(void*)i);
   }
@@ -240,9 +240,9 @@ void gauss() {
   }
 
   // testcase,print result
-  for (row = 0; row < N; row++) {
-    fprintf(stderr, "%d ", X[row] );
-  }
+  //for (row = 0; row < N; row++) {
+   // fprintf(stderr, "%d ", X[row] );
+  //}
 
   pthread_mutex_destroy(&global_lock);
   pthread_barrier_destroy(&barrier);
@@ -262,7 +262,7 @@ void *compute_gauss(void *threadid){
       pthread_mutex_lock(&global_lock);
       //m_lock();
       row = global_row;
-      global_row++;
+      global_row+=1;
       pthread_mutex_unlock(&global_lock);
       //m_unlock();
     /* for (row = norm + 1; row < N; row++) { parallize this part */
