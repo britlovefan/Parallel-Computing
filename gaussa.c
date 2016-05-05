@@ -195,10 +195,13 @@ int main(int argc, char **argv) {
  */
 /*==========================Algorithm Description(explicit)===========================
 In the original gauss function, after the initialization perform gauss_compute which 
-is the parallel part 
+is the parallel part, we choose to parallel row for each norm.
 Each single task is responsible for one zero element in the lower diaganal of A
 Implement the mutex in the second loop of Gaussian elimination
-For dynamic schedule: use the row and global_row
+Each time for a new norm, the global_row is set to norm+1, and we use a barrier to 
+make sure every processor has update the global_row
+For dynamic schedule: use the row and global_row, a lock is used to limit onlu
+one access to global_row at each time
 Also, a barrier is added to make sure that each row has finished computation
 before moving to the next one
 ==============================================================================*/

@@ -194,7 +194,9 @@ int main(int argc, char **argv) {
  * defined in the beginning of this code.  X[] is initialized to zeros.
  */
 /*=====================Algorithms Description==========================
-
+In our algorithm, for each norm, we parallize row. We choose dynamic scheduling,
+for a fixed norm, each thread calulate and apdate rows independently. Since for a 
+given norm, there is no dependence between different rows. So we can parallize row.
 
 
 =======================================================================*/
