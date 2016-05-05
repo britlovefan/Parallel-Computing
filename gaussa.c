@@ -258,6 +258,7 @@ void *compute_gauss(void *threadid){
  /* Gaussian elimination */
   for (norm = 0; norm < N - 1; norm++) {
     global_row = norm + 1;
+    
     while(global_row < N){
       pthread_mutex_lock(&global_lock);
       //m_lock();
