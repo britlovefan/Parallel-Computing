@@ -220,7 +220,7 @@ void gauss() {
 
   printf("Parallel Program.\n");
   //m_set_procs( procs )
-  for(i = 0; i < procs; i++)
+  for (i = 0; i < procs; i++)
   {
      pthread_create(&threads[i],NULL,&compute_gauss,(void*)i);
   }
@@ -240,9 +240,9 @@ void gauss() {
   }
 
   // testcase,print result
-  //for (row = 0; row < N; row++) {
-   // fprintf(stderr, "%d ", X[row] );
-  //}
+/* for (row = 0; row < N; row++) {
+    fprintf(stderr, "%d ", X[row] );
+  }*/
 
   pthread_mutex_destroy(&global_lock);
   pthread_barrier_destroy(&barrier);
@@ -258,7 +258,7 @@ void *compute_gauss(void *threadid){
  /* Gaussian elimination */
   for (norm = 0; norm < N - 1; norm++) {
     global_row = norm + 1;
-    
+    pthread_barrier_wait(&barrier);
     while(global_row < N){
       pthread_mutex_lock(&global_lock);
       //m_lock();
