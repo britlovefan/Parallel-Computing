@@ -149,12 +149,6 @@ void print_X() {
 
 int main(int argc, char **argv) {
   /* Timing variables */
-  struct timeval etstart, etstop;  /* Elapsed times using gettimeofday() */
-  struct timezone tzdummy;
-  clock_t etstart2, etstop2;  /* Elapsed times using times() */
-  unsigned long long usecstart, usecstop;
-  struct tms cputstart, cputstop;  /* CPU times for my processes */
-
   ID = argv[argc-1];
   argc--;
   
@@ -162,39 +156,19 @@ int main(int argc, char **argv) {
   MPI_Init(&argc,&argv);
   MPI_Commm_size(MPI_COMM_WORLD,&procs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
-  printf("\nProcess Number\n");
 
   /* Process program parameters */
   parameters(argc, argv);
 
-  /* Initialize A and B */
+  /* Initialize A and B for step 1 of Algorithms*/
+  if(myid == 0){
   initialize_inputs();
-
   /* Print input matrices */
   print_inputs();
-
-  /* Start Clock */
-  printf("\nStarting clock.\n");
-  gettimeofday(&etstart, &tzdummy);
-  etstart2 = times(&cputstart);
-
+  }
   /* Gaussian Elimination */
   gauss();
-
-  /* Stop Clock */
-  gettimeofday(&etstop, &tzdummy);
-  etstop2 = times(&cputstop);
-  printf("Stopped clock.\n");
-  usecstart = (unsigned long long)etstart.tv_sec * 1000000 + etstart.tv_usec;
-  usecstop = (unsigned long long)etstop.tv_sec * 1000000 + etstop.tv_usec;
-
-  /* Display output */
-  print_X();
-
-  /* Display timing results */
-  printf("\nElapsed time = %g ms.\n",
-	 (float)(usecstop - usecstart)/(float)1000);
-
+  MPI_Finalize();
 }
 
 /* ------------------ Above Was Provided --------------------- */
@@ -203,36 +177,75 @@ int main(int argc, char **argv) {
 /* Provided global variables are MAXN, N, procs, A[][], B[], and X[],
  * defined in the beginning of this code.  X[] is initialized to zeros.
  */
-/*=====================Algorithms Description==========================
-In our algorithm, for each norm, we parallize row. We choose dynamic scheduling,
-for a fixed norm, each thread calulate and apdate rows independently. Since for a 
-given norm, there is no dependence between different rows. So we can parallize row.
 
-
-=======================================================================*/
 void gauss() {
-  int norm, row, col;  /* Normalization row, and zeroing
+  int norm, row, col,i;  /* Normalization row, and zeroing
 			* element row and col */
   float multiplier;
-
-  printf("parallel.\n");
-
-  /* Gaussian elimination */
+  MPI_Status status;
+  /* Calculate the Running time */
+  double startTime = 0.0;
+  double endTime = 0.0;
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(myid == 0){
+    startTime = MPI_Wtime();
+  }
+ /* Gaussian elimination */
   for (norm = 0; norm < N - 1; norm++) {
     {
-       for (row = norm + 1; row < N; row++) {
-        multiplier = A[row][norm] / A[norm][norm];
-       for (col = norm; col < N; col++) {
-	      A[row][col] -= A[norm][col] * multiplier;
+      MPI_Bcast(&A[norm][0], N, MPI_FLOAT, 0, MPI_COMM_WORLD);
+      MPI_Bcast(&B[norm],1,MPI_FLOAT, 0, MPI_COMM_WORLD);
+
+      /*Static Interleaved Scheduling to Send the data to corresponding process */
+      if(myid = 0){
+        for(i = 1;i < procs;i++){
+          for(row = norm + 1 + i; row < N;row = row + procs){
+            MPI_SEND(&A[row],N,MPI_float,i,0,MPI_COMM_WORLD);
+            MPI_SEND(&B[row],1,MPI_float,i,0,MPI_COMM_WORLD);
+          }
+        }
+         /*Elimination*/
+        for (row = norm + 1; row < N; row = row + procs) {
+          multiplier = A[row][norm] / A[norm][norm];
+          for (col = norm; col < N; col++) {
+            A[row][col] -= A[norm][col] * multiplier;
+          }
+          B[row] -= B[norm] * multiplier;
+        }
+        /*update data from processes*/
+        for(i = 1;i < procs; i++){
+          for (row = norm + 1 + i; row < N; row += procs) {
+            MPI_Recv(&A[row],N,MPI_float,i,1,MPI_COMM_WORLD);
+            MPI_Recv(&B[row],1,MPI_float,i,1,MPI_COMM_WORLD);
+          }
+        }
+        if (norm == N - 2) {
+          endTime = MPI_Wtime();
+          printf("total elapsed time = %f\n", endTime - startTime);
+        }
       }
-      B[row] -= B[norm] * multiplier;
+      /* If not the processor 0, then receive data*/
+    else{
+      for (row = norm + 1 + myid; row < N; row += procs) {
+        /*receive from process 0*/
+        MPI_Recv(&A[row], N, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);   
+        MPI_Recv(&B[row], 1, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
+        /*Gaussian elimination*/
+        multiplier = A[row][norm] / A[norm][norm];
+        for (col = norm; col < N; col++) {
+            A[row][col] -= A[norm][col] * multiplier;
+          }
+          B[row] -= B[norm] * multiplier;
+          /*SEND BACK TO PROCESSOR 0*/
+          MPI_SEND(&A[row],N,MPI_FLOAT,0,1,MPI_COMM_WORLD);
+          MPI_SEND(&B[row],1,MPI_FLOAT,0,1,MPI_COMM_WORLD);
+        }
     }
-  }
-}
+
   /* (Diagonal elements are not normalized to 1.  This is treated in back
    * substitution.)
    */
-
+  MPI_Barrier(MPI_COMM_WORLD);
   /* Back substitution */
   for (row = N - 1; row >= 0; row--) {
     X[row] = B[row];
