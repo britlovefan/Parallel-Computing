@@ -1,4 +1,9 @@
 /* Gaussian elimination without pivoting.
+Algorithms:
+1) At processor 0, complete the data Initiablization including matrix A and B and X
+2) Processor0 broadcast data of A, B and X to all other processors 
+3) Interleave scheduling, for each processor, it broadcast the specific rows to others processors
+4) Wait until all the rows finished calculation, then perform back substitution 
  */
 
 /* ****** ADD YOUR CODE AT THE END OF THIS FILE. ******
