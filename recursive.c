@@ -86,10 +86,10 @@ void find_quadrants(int num_quadrants, int left, int right, int cur_quadrants,in
         (*coordinate_pointer)++;
         //UPDATE Coordinates[][]
         *(coordinates+index) = x_pivot;
-        (*(coordinates+index)+1) =min_x;
-        (*(coordinates+index)+2) =min_y;
-        (*(coordinates+index)+3) =max_x;
-        (*(coordinates+index)+4) =max_y;
+        *(*(coordinates+index)+1) =min_x;
+        *(*(coordinates+index)+2) =min_y;
+        *(*(coordinates+index)+3) =max_x;
+        *(*(coordinates+index)+4) =max_y;
 
         *(xory+index) = 0;
         if (num_quadrants <= 2 * cur_quadrants)
@@ -132,10 +132,10 @@ void find_quadrants(int num_quadrants, int left, int right, int cur_quadrants,in
         (*coordinate_pointer)++;
         //UPDATE Coordinates[][]
         *(coordinates+index) = y_pivot;
-        (*(coordinates+index)+1) =min_x;
-        (*(coordinates+index)+2) =min_y;
-        (*(coordinates+index)+3) =max_x;
-        (*(coordinates+index)+4) =max_y;
+        *(*(coordinates+index)+1) =min_x;
+        *(*(coordinates+index)+2) =min_y;
+        *(*(coordinates+index)+3) =max_x;
+        *(*(coordinates+index)+4) =max_y;
 
         *(xory+index) = 1;
         if (num_quadrants <= 2 * cur_quadrants)
@@ -158,10 +158,6 @@ void find_quadrants(int num_quadrants, int left, int right, int cur_quadrants,in
 
 void find_quad(int num_quadrants,int *coordinates) 
 {
-    int top[num_quadrants];
-    int left[num_quadrants];
-    int right[num_quadrants];
-    int bottom[num_quadrants];
     int xory[num_quadrants];
     //int coordinates[num_quadrants][5];
     int coordinate_pointer[1];
