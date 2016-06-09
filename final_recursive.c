@@ -1,6 +1,7 @@
 // Algorithms: recursively divide the longer dimension of the screen using the median-cut 
 // until the number of tiles equals the number of processors. 
-// Hushiqi & QianWang
+// ShiqiHu & QianWang
+
 #include "mpi.h"
 #include <stdio.h>
 #include <math.h>
@@ -27,12 +28,12 @@ void swap(unsigned int array[], int i, int j);
 unsigned int find_kth(unsigned int *v, int n, int k, unsigned int *y);
 //global_cost computed at process 0
 double global_cost = 0;
-//find border of initial quadrant by finding the border of X and Y
-void find_quadrants(int num_quadrants, int left, int right, int cur_quadrants,int *coordinates,int *coordinate_pointer,int *xory) {  
+
+void find_quadrants(int num_quadrants, int left, int right, int cur_quadrants,int *coordinate_pointer) {  
     if (num_quadrants <= cur_quadrants) {
         return;
     }
-    printf("\nComputing in find_quadrants.%d \n",cur_quadrants);
+    // find the max and min of Xdimension and Ydimension
     int min_x = X_axis[left];
     int max_x = X_axis[left];
     int min_y = Y_axis[left];
@@ -57,12 +58,8 @@ void find_quadrants(int num_quadrants, int left, int right, int cur_quadrants,in
     y_dimension = max_y - min_y;
     //check the length of each dimension, choose the longest one to cut
     if(x_dimension >  y_dimension){
-        printf("\ncut in x.\n");
-        printf("\nleft:  %d \n", left);
-        printf("\nright:  %d \n", right);
         //find the median of the corresponding part of X_axis[]
         int x_pivot = find_kth(X_axis+left, right-left + 1,(right - left+1)/2 -1, Y_axis+left);
-        printf("\nxpivot:  %d \n", x_pivot);
         k = left;
         j = right;
         //make sure that the numbers smaller than the median are all gathered together on the left half of the array
@@ -78,40 +75,28 @@ void find_quadrants(int num_quadrants, int left, int right, int cur_quadrants,in
             }
             k++;
         }
-        printf("\nk:  %d \n", k);
-        printf("\nafter cut x   \n");
-        //record the point of seperation for future use 
-        int index = *coordinate_pointer;
-        printf("\n x_index:  %d \n",*coordinate_pointer); 
-        (*coordinate_pointer)++;
-        //UPDATE Coordinates[][]
-        *(coordinates+index) = x_pivot;
-        *(coordinates[index]+1) =min_x;
-        *(coordinates[index]+2) =min_y;
-        *(coordinates[index]+3) =max_x;
-        *(coordinates[index]+4) =max_y;
-
-        *(xory+index) = 0;
+        //print the four coordinates in the last step of recursion
         if (num_quadrants <= 2 * cur_quadrants)
-        {
+        {   
+            printf("\n x_index:  %d ",*coordinate_pointer); 
+            (*coordinate_pointer)++;
             printf(" (%d,%d) ", min_x, max_y);
             printf(" (%d,%d) ", x_pivot, max_y);
             printf(" (%d,%d) ", x_pivot,  min_y);
             printf(" (%d,%d) \n", min_x, min_y);
-
+            printf("\n x_index:  %d ",*coordinate_pointer); 
+            (*coordinate_pointer)++;
             printf(" (%d,%d) ", x_pivot, max_y);
             printf(" (%d,%d) ", max_x, max_y);
             printf(" (%d,%d) ", max_x,  min_y);
             printf(" (%d,%d) \n",x_pivot,  min_y);
         }
-        find_quadrants (num_quadrants,left,left + (right - left)/2-1,cur_quadrants*2,&coordinates[0],&coordinate_pointer[0],&xory[0]);
-        find_quadrants (num_quadrants,left + (right - left)/2,right,cur_quadrants*2,&coordinates[0],&coordinate_pointer[0],&xory[0]);
+        find_quadrants (num_quadrants,left,left + (right - left)/2-1,cur_quadrants*2,&coordinate_pointer[0]);
+        find_quadrants (num_quadrants,left + (right - left)/2,right,cur_quadrants*2,&coordinate_pointer[0]);
     }
     //if Y dimension is longer, cut on Y dimension, Algorithms SAME as cut on X's dimension
     else {
-        printf("\ncut in y.\n");
         int y_pivot = find_kth(Y_axis+left, right-left + 1, (right - left+1)/2 -1, X_axis+left);
-        printf("\nypivot:  %d \n", y_pivot);
         k = left;
         j = right;
         while (k <= j && k < left + (right - left)/2) {
@@ -126,61 +111,52 @@ void find_quadrants(int num_quadrants, int left, int right, int cur_quadrants,in
             }
             k++;
         }
-        printf("\n cut after y.\n");
-        int index = *coordinate_pointer;
-        printf("\n y_index:  %d \n", *coordinate_pointer); 
-        (*coordinate_pointer)++;
-        //UPDATE Coordinates[][]
-        *(coordinates+index) = y_pivot;
-        *(*(coordinates+index)+1) =min_x;
-        *(*(coordinates+index)+2) =min_y;
-        *(*(coordinates+index)+3) =max_x;
-        *(*(coordinates+index)+4) =max_y;
-
-        *(xory+index) = 1;
         if (num_quadrants <= 2 * cur_quadrants)
         {
+            printf("\n x_index:  %d \n",*coordinate_pointer); 
+            (*coordinate_pointer)++;
             printf(" (%d,%d) ", min_x, max_y);
             printf(" (%d,%d) ", max_x, max_y);
             printf(" (%d,%d) ", max_x, y_pivot);
             printf(" (%d,%d) \n", min_x,y_pivot);
-
+            printf("\n x_index:  %d ",*coordinate_pointer); 
+            (*coordinate_pointer)++;
             printf(" (%d,%d) ", min_x,y_pivot);
             printf(" (%d,%d) ", max_x, y_pivot);
             printf(" (%d,%d) ", max_x,  min_y);
             printf(" (%d,%d) \n",min_x,  min_y);
         }
-        find_quadrants (num_quadrants,left,(left+right)/2-1,cur_quadrants*2,&coordinates[0],&coordinate_pointer[0],&xory[0]);
-        find_quadrants (num_quadrants,(left+right)/2,right,cur_quadrants*2,&coordinates[0],&coordinate_pointer[0],&xory[0]);
+        find_quadrants (num_quadrants,left,(left+right)/2-1,cur_quadrants*2,&coordinate_pointer[0]);
+        find_quadrants (num_quadrants,(left+right)/2,right,cur_quadrants*2,&coordinate_pointer[0]);
     }
     return;
+    
 }
 
-void find_quad(int num_quadrants,int *coordinates) 
-{
-    int xory[num_quadrants];
-    //int coordinates[num_quadrants][5];
+
+void find_quad (int num_quadrants) {
     int coordinate_pointer[1];
-    coordinate_pointer[0] = 0;
-    find_quadrants(num_quadrants,0,NUM_POINTS,1,&coordinates[0],&coordinate_pointer[0],&xory[0]);
+    coordinate_pointer[0] = 1;
+    find_quadrants(num_quadrants,0,NUM_POINTS-1,1,&coordinate_pointer[0]);
     return;
 }
-// find the kth smallest key in a, n is the number of elements in array a
+    
+// find the kth smallest key in v
 // Use medians of medians Algorithms which claims to have linear worst-case runtime for selecting the k th largest
 // https://www.quora.com/What-is-the-most-efficient-algorithm-to-find-the-kth-smallest-element-in-an-array-having-n-unordered-elements
-unsigned int find_kth(unsigned int *a, int n, int k, unsigned int *y) 
-{
-    if (n == 1 && k == 0) return a[0];
+unsigned int find_kth(unsigned int *v, int n, int k, unsigned int *y) {
     int j0 = 0;
     int i1 = 0;
     int j1 = 0;
+    if (n == 1 && k == 0) return v[0];
     //divide the array into n/5 subarrays of 5 elements and find the medians for each subarrays
-    int number = (n + 4)/5; // the number of subarrays 
-    unsigned int *medians =  (unsigned int *)malloc(number* sizeof(int)); 
-    for (i1=0; i1<num; i1++) {
+    int m = (n + 4)/5; // the number of subarrays 
+    // the medians array used to store the medians of the subarrays
+    unsigned int *medians =  (unsigned int *)malloc(m * sizeof(int)); 
+    for (i1=0; i1<m; i1++) {
         if (5*i1 + 4 < n) { // sort the subarray 
+            unsigned int *w = v + 5*i1;
             unsigned int *w1 = y + 5*i1;
-            unsigned int *w = a + 5*i1;
             for (j0=0; j0<3; j0++) {
                 int jmin = j0;
                 for (j1=j0+1; j1<5; j1++) {
@@ -191,15 +167,15 @@ unsigned int find_kth(unsigned int *a, int n, int k, unsigned int *y)
             }
             medians[i1] = w[2];
         } else {
-            medians[i1] = a[5*i1];
+            medians[i1] = v[5*i1];
         }
     }
     //find the median of medians
-    int pivot = find_kth(medians, number, number/2, medians);
+    int pivot = find_kth(medians, m, m/2, medians);
     free(medians);
     for (i1=0; i1<n; i1++) {
-        if (a[i1] == pivot) {
-            swap(a, i1, n-1);
+        if (v[i1] == pivot) {
+            swap(v, i1, n-1);
             swap(y, i1, n-1);
             break;
         }
@@ -207,23 +183,24 @@ unsigned int find_kth(unsigned int *a, int n, int k, unsigned int *y)
  // keep the number of elements that are smaller than the median pivot
     int num = 0;
     for (i1=0; i1<n-1; i1++) {
-        if (a[i1] < pivot) {
-            swap(a, i1, num);
+        if (v[i1] < pivot) {
+            swap(v, i1, num);
             swap(y, i1, num);
             num++;
         }
     }
-    swap(a, num, n-1);
+    swap(v, num, n-1);
     swap(y, num, n-1);
     if (num == k) {
        //return when exactly k elemens are smaller than pivot
+        //printf("\nmedian:  %d \n", pivot);
         return pivot;
     } else if (num > k) {
-      //find kth smallest in the left num amount of elements in a
-        return find_kth(a, num, k, y);
+      //find kth smallest in the left num amount of elements in v
+        return find_kth(v, num, k, y);
     } else {
-      //find the k-num-1 smallest in the right side of the a staring at index a+store+1
-        return find_kth(a+num+1, n-num-1, k-num-1, y+num+1);
+      //find the k-num-1 smallest in the right side of the v staring at index v+store+1
+        return find_kth(v+num+1, n-num-1, k-num-1, y+num+1);
     }
 }
 
@@ -242,7 +219,6 @@ char *argv[];
     int  namelen;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
 
-    int coordinates[num_quadrants][5];
 
     /*Time Variables*/
     double startwtime = 0.0, endwtime;
@@ -275,7 +251,7 @@ char *argv[];
         printf("\nComputing Parallely Using MPI.\n");
         startwtime = MPI_Wtime();
     }
-    if (myid == 0) find_quad(num_quadrants,&coordinates);
+    if (myid == 0) find_quad(num_quadrants);
     MPI_Bcast(&X_axis, NUM_POINTS, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&Y_axis, NUM_POINTS, MPI_INT, 0, MPI_COMM_WORLD);  
    //Parallel Commputing-->Compute the Cost and finally reduced to Processor 0 
@@ -299,16 +275,13 @@ char *argv[];
     }
     //Using Reduce the calculate the total cost at  Processor 0.
     MPI_Reduce(&local_cost, &global_cost, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
-    printf("\nTotal cost:  %lf \n", global_cost);
-
     if (myid == 0) {
        printf("\nFInalTotal cost: %lf \n", global_cost);
       //end timer at process 0
         endwtime = MPI_Wtime();
       //the total execution time
         printf("\nelapsed time = %f\n", endwtime - startwtime);
-       //print the total partition cost
+      //print the total partition cost
     }
     MPI_Finalize();
     return 0;
