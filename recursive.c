@@ -169,23 +169,22 @@ void find_quad(int num_quadrants,int *coordinates)
     find_quadrants(num_quadrants,0,NUM_POINTS,1,&coordinates[0],&coordinate_pointer[0],&xory[0]);
     return;
 }
-// find the kth smallest key in v
+// find the kth smallest key in a, n is the number of elements in array a
 // Use medians of medians Algorithms which claims to have linear worst-case runtime for selecting the k th largest
 // https://www.quora.com/What-is-the-most-efficient-algorithm-to-find-the-kth-smallest-element-in-an-array-having-n-unordered-elements
-unsigned int find_kth(unsigned int *v, int n, int k, unsigned int *y) 
+unsigned int find_kth(unsigned int *a, int n, int k, unsigned int *y) 
 {
+    if (n == 1 && k == 0) return a[0];
     int j0 = 0;
     int i1 = 0;
     int j1 = 0;
-    if (n == 1 && k == 0) return v[0];
     //divide the array into n/5 subarrays of 5 elements and find the medians for each subarrays
-    int m = (n + 4)/5; // the number of subarrays 
-    // the medians array used to store the medians of the subarrays
-    unsigned int *medians =  (unsigned int *)malloc(m * sizeof(int)); 
-    for (i1=0; i1<m; i1++) {
+    int number = (n + 4)/5; // the number of subarrays 
+    unsigned int *medians =  (unsigned int *)malloc(number* sizeof(int)); 
+    for (i1=0; i1<num; i1++) {
         if (5*i1 + 4 < n) { // sort the subarray 
-            unsigned int *w = v + 5*i1;
             unsigned int *w1 = y + 5*i1;
+            unsigned int *w = a + 5*i1;
             for (j0=0; j0<3; j0++) {
                 int jmin = j0;
                 for (j1=j0+1; j1<5; j1++) {
@@ -196,15 +195,15 @@ unsigned int find_kth(unsigned int *v, int n, int k, unsigned int *y)
             }
             medians[i1] = w[2];
         } else {
-            medians[i1] = v[5*i1];
+            medians[i1] = a[5*i1];
         }
     }
     //find the median of medians
-    int pivot = find_kth(medians, m, m/2, medians);
+    int pivot = find_kth(medians, number, number/2, medians);
     free(medians);
     for (i1=0; i1<n; i1++) {
-        if (v[i1] == pivot) {
-            swap(v, i1, n-1);
+        if (a[i1] == pivot) {
+            swap(a, i1, n-1);
             swap(y, i1, n-1);
             break;
         }
@@ -212,23 +211,23 @@ unsigned int find_kth(unsigned int *v, int n, int k, unsigned int *y)
  // keep the number of elements that are smaller than the median pivot
     int num = 0;
     for (i1=0; i1<n-1; i1++) {
-        if (v[i1] < pivot) {
-            swap(v, i1, num);
+        if (a[i1] < pivot) {
+            swap(a, i1, num);
             swap(y, i1, num);
             num++;
         }
     }
-    swap(v, num, n-1);
+    swap(a, num, n-1);
     swap(y, num, n-1);
     if (num == k) {
        //return when exactly k elemens are smaller than pivot
         return pivot;
     } else if (num > k) {
-      //find kth smallest in the left num amount of elements in v
-        return find_kth(v, num, k, y);
+      //find kth smallest in the left num amount of elements in a
+        return find_kth(a, num, k, y);
     } else {
-      //find the k-num-1 smallest in the right side of the v staring at index v+store+1
-        return find_kth(v+num+1, n-num-1, k-num-1, y+num+1);
+      //find the k-num-1 smallest in the right side of the a staring at index a+store+1
+        return find_kth(a+num+1, n-num-1, k-num-1, y+num+1);
     }
 }
 
