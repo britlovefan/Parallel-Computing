@@ -1,0 +1,12 @@
+1. Returns an elapsed time on the calling processor: double MPI_Wtime( void )
+2. Blocking Send or Unblocking Send, MPI_ISEND OR MPI_SEND: What is the difference?
+http://mpitutorial.com/tutorials/mpi-send-and-receive/
+
+How to compile:
+mpicc -o cpi cpi.c
+
+How to terminate un£º
+condor_rm remove Jobs from the condor queue
+condor_rm username
+
+    
